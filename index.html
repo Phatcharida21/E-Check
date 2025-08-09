@@ -1,0 +1,1286 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบจัดการตารางสอบ</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Sarabun', sans-serif; }
+        .exam-day {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            color: white;
+            font-weight: bold;
+            position: relative;
+        }
+        .exam-day::after {
+            content: '📝';
+            position: absolute;
+            top: 2px;
+            right: 2px;
+            font-size: 10px;
+        }
+        .today {
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+            color: white;
+            font-weight: bold;
+        }
+        .calendar-day {
+            transition: all 0.2s ease;
+        }
+        .calendar-day:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        .tab-active {
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+            color: white;
+        }
+        .tab-inactive {
+            background: #f3f4f6;
+            color: #6b7280;
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen p-4">
+    <div class="max-w-7xl mx-auto">
+        <!-- Header -->
+        <div class="bg-white rounded-xl shadow-lg p-6 mb-6">
+            <h1 class="text-3xl font-bold text-gray-800 mb-4 text-center">🎓 ระบบจัดการตารางสอบ</h1>
+            
+            <!-- แท็บเมนู -->
+            <div class="flex justify-center space-x-4">
+                <button onclick="showTab('table')" id="tableTab" class="tab-active px-6 py-3 rounded-lg font-medium transition-all duration-200 shadow-md">
+                    📊 ตารางสอบ
+                </button>
+                <button onclick="showTab('calendar')" id="calendarTab" class="tab-inactive px-6 py-3 rounded-lg font-medium transition-all duration-200 shadow-md hover:shadow-lg">
+                    📅 ปฏิทินสอบ
+                </button>
+            </div>
+        </div>
+
+        <!-- เวอร์ชั่น 1: ตารางสอบ -->
+        <div id="tableView" class="tab-content">
+            <div class="bg-white rounded-xl shadow-lg p-6 mb-6">
+                <!-- ปุ่มเพิ่มรายวิชาและ Export -->
+                <div class="mb-6 flex flex-wrap gap-3">
+                    <button onclick="showAddForm()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-colors duration-200 shadow-md">
+                        ➕ เพิ่มรายวิชา
+                    </button>
+                    <button onclick="exportToExcel()" class="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-medium transition-colors duration-200 shadow-md">
+                        📊 Export Excel
+                    </button>
+                    <button onclick="exportToWord()" class="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-lg font-medium transition-colors duration-200 shadow-md">
+                        📄 Export Word
+                    </button>
+                </div>
+
+                <!-- ฟอร์มเพิ่มรายวิชา -->
+                <div id="addForm" class="hidden bg-gray-50 p-6 rounded-lg mb-6 border-2 border-dashed border-gray-300">
+                    <h3 class="text-xl font-semibold mb-4 text-gray-700">เพิ่มรายวิชาใหม่</h3>
+                    
+                    <!-- ข้อมูลพื้นฐาน -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                        <input type="text" id="courseCode" placeholder="รหัสวิชา (เช่น CP353001)" class="border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        <input type="text" id="courseName" placeholder="ชื่อรายวิชา" class="border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent md:col-span-2">
+                        <input type="text" id="courseGroup" placeholder="กลุ่ม" class="border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    </div>
+
+                    <!-- สอบกลางภาค -->
+                    <div class="bg-blue-50 p-4 rounded-lg mb-4">
+                        <h4 class="font-semibold text-blue-800 mb-3">📝 สอบกลางภาค</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+                            <input type="date" id="midtermDate" class="border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <input type="time" id="midtermStartTime" placeholder="เวลาเริ่ม" class="border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <input type="time" id="midtermEndTime" placeholder="เวลาสิ้นสุด" class="border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <input type="text" id="midtermRoom" placeholder="ห้องสอบ" class="border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        </div>
+                    </div>
+
+                    <!-- สอบปลายภาค -->
+                    <div class="bg-red-50 p-4 rounded-lg mb-4">
+                        <h4 class="font-semibold text-red-800 mb-3">📝 สอบปลายภาค</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+                            <input type="date" id="finalDate" class="border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <input type="time" id="finalStartTime" placeholder="เวลาเริ่ม" class="border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <input type="time" id="finalEndTime" placeholder="เวลาสิ้นสุด" class="border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <input type="text" id="finalRoom" placeholder="ห้องสอบ" class="border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        </div>
+                    </div>
+
+                    <div class="flex gap-3">
+                        <button onclick="addCourse()" class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg font-medium transition-colors duration-200">
+                            ✅ เพิ่ม
+                        </button>
+                        <button onclick="hideAddForm()" class="bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded-lg font-medium transition-colors duration-200">
+                            ❌ ยกเลิก
+                        </button>
+                    </div>
+                </div>
+
+                <!-- ตาราง -->
+                <div class="overflow-x-auto">
+                    <table class="w-full border-collapse bg-white rounded-lg overflow-hidden shadow-sm">
+                        <thead class="bg-gradient-to-r from-blue-600 to-indigo-600 text-white">
+                            <tr>
+                                <th rowspan="2" class="border border-gray-300 px-4 py-3 text-left font-semibold align-middle">รหัสวิชา</th>
+                                <th rowspan="2" class="border border-gray-300 px-4 py-3 text-left font-semibold align-middle">ชื่อรายวิชา</th>
+                                <th rowspan="2" class="border border-gray-300 px-4 py-3 text-center font-semibold align-middle">กลุ่ม</th>
+                                <th colspan="3" class="border border-gray-300 px-4 py-2 text-center font-semibold">สอบกลางภาค</th>
+                                <th colspan="3" class="border border-gray-300 px-4 py-2 text-center font-semibold">สอบปลายภาค</th>
+                                <th rowspan="2" class="border border-gray-300 px-4 py-3 text-center font-semibold align-middle">สถานะ</th>
+                                <th rowspan="2" class="border border-gray-300 px-4 py-3 text-center font-semibold align-middle">จัดการ</th>
+                            </tr>
+                            <tr>
+                                <th class="border border-gray-300 px-3 py-2 text-center font-medium text-sm">วันที่</th>
+                                <th class="border border-gray-300 px-3 py-2 text-center font-medium text-sm">เวลา</th>
+                                <th class="border border-gray-300 px-3 py-2 text-center font-medium text-sm">ห้อง</th>
+                                <th class="border border-gray-300 px-3 py-2 text-center font-medium text-sm">วันที่</th>
+                                <th class="border border-gray-300 px-3 py-2 text-center font-medium text-sm">เวลา</th>
+                                <th class="border border-gray-300 px-3 py-2 text-center font-medium text-sm">ห้อง</th>
+                            </tr>
+                        </thead>
+                        <tbody id="courseTable">
+                            <!-- ข้อมูลจะถูกเพิ่มที่นี่ -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- เวอร์ชั่น 2: ปฏิทินสอบ -->
+        <div id="calendarView" class="tab-content hidden">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- ปฏิทิน -->
+                <div class="lg:col-span-2">
+                    <div class="bg-white rounded-xl shadow-lg p-6">
+                        <div class="flex justify-between items-center mb-6">
+                            <button onclick="previousMonth()" class="bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-2 rounded-lg font-medium transition-colors duration-200">
+                                ← เดือนก่อน
+                            </button>
+                            <h2 class="text-2xl font-bold text-gray-800" id="monthYear">ตุลาคม 2568</h2>
+                            <button onclick="nextMonth()" class="bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-2 rounded-lg font-medium transition-colors duration-200">
+                                เดือนถัดไป →
+                            </button>
+                        </div>
+
+                        <!-- วันในสัปดาห์ -->
+                        <div class="grid grid-cols-7 gap-2 mb-4">
+                            <div class="text-center font-semibold text-red-600 py-2">อา</div>
+                            <div class="text-center font-semibold text-gray-700 py-2">จ</div>
+                            <div class="text-center font-semibold text-gray-700 py-2">อ</div>
+                            <div class="text-center font-semibold text-gray-700 py-2">พ</div>
+                            <div class="text-center font-semibold text-gray-700 py-2">พฤ</div>
+                            <div class="text-center font-semibold text-gray-700 py-2">ศ</div>
+                            <div class="text-center font-semibold text-blue-600 py-2">ส</div>
+                        </div>
+
+                        <!-- วันที่ -->
+                        <div class="grid grid-cols-7 gap-2" id="calendarDays">
+                            <!-- วันที่จะถูกสร้างด้วย JavaScript -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- รายการสอบ -->
+                <div class="lg:col-span-1">
+                    <div class="bg-white rounded-xl shadow-lg p-6">
+                        <h3 class="text-xl font-bold text-gray-800 mb-4">📝 รายการสอบประจำเดือน</h3>
+                        <div id="examList" class="space-y-4">
+                            <!-- รายการสอบจะถูกสร้างด้วย JavaScript -->
+                        </div>
+                    </div>
+
+                    <!-- สถิติการสอบ -->
+                    <div class="bg-white rounded-xl shadow-lg p-6 mt-6">
+                        <h3 class="text-xl font-bold text-gray-800 mb-4">📊 สถิติการสอบ</h3>
+                        <div class="space-y-3">
+                            <div class="flex justify-between items-center">
+                                <span class="text-gray-600">จำนวนวิชาทั้งหมด:</span>
+                                <span class="font-bold text-blue-600" id="totalSubjects">7</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-gray-600">วิชาที่มีสอบ:</span>
+                                <span class="font-bold text-red-600" id="examSubjects">5</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-gray-600">วันที่มีสอบ:</span>
+                                <span class="font-bold text-orange-600" id="examDays">5</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-gray-600">วิชาที่ไม่มีสอบ:</span>
+                                <span class="font-bold text-green-600" id="noExamSubjects">2</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- รายละเอียดสอบเมื่อคลิกวันที่ -->
+            <div id="examDetails" class="hidden mt-6 bg-white rounded-xl shadow-lg p-6">
+                <h3 class="text-xl font-bold text-gray-800 mb-4" id="selectedDate">รายละเอียดการสอบ</h3>
+                <div id="examDetailsContent">
+                    <!-- รายละเอียดจะถูกแสดงที่นี่ -->
+                </div>
+                
+                <!-- ตารางเวลาสัปดาห์ -->
+                <div id="weeklySchedule" class="mt-6">
+                    <h4 class="text-lg font-semibold text-gray-800 mb-4">📅 ตารางเวลาสัปดาห์นี้</h4>
+                    <div class="overflow-x-auto">
+                        <table class="w-full border-collapse bg-white rounded-lg overflow-hidden shadow-sm">
+                            <thead class="bg-gradient-to-r from-indigo-500 to-purple-600 text-white">
+                                <tr>
+                                    <th class="border border-gray-300 px-3 py-2 text-center font-semibold">เวลา</th>
+                                    <th class="border border-gray-300 px-3 py-2 text-center font-semibold">อาทิตย์</th>
+                                    <th class="border border-gray-300 px-3 py-2 text-center font-semibold">จันทร์</th>
+                                    <th class="border border-gray-300 px-3 py-2 text-center font-semibold">อังคาร</th>
+                                    <th class="border border-gray-300 px-3 py-2 text-center font-semibold">พุธ</th>
+                                    <th class="border border-gray-300 px-3 py-2 text-center font-semibold">พฤหัสบดี</th>
+                                    <th class="border border-gray-300 px-3 py-2 text-center font-semibold">ศุกร์</th>
+                                    <th class="border border-gray-300 px-3 py-2 text-center font-semibold">เสาร์</th>
+                                </tr>
+                                <tr class="bg-indigo-400">
+                                    <td class="border border-gray-300 px-3 py-1 text-center text-sm font-medium">วันที่</td>
+                                    <td class="border border-gray-300 px-3 py-1 text-center text-sm" id="weekDate0"></td>
+                                    <td class="border border-gray-300 px-3 py-1 text-center text-sm" id="weekDate1"></td>
+                                    <td class="border border-gray-300 px-3 py-1 text-center text-sm" id="weekDate2"></td>
+                                    <td class="border border-gray-300 px-3 py-1 text-center text-sm" id="weekDate3"></td>
+                                    <td class="border border-gray-300 px-3 py-1 text-center text-sm" id="weekDate4"></td>
+                                    <td class="border border-gray-300 px-3 py-1 text-center text-sm" id="weekDate5"></td>
+                                    <td class="border border-gray-300 px-3 py-1 text-center text-sm" id="weekDate6"></td>
+                                </tr>
+                            </thead>
+                            <tbody id="weeklyScheduleBody">
+                                <!-- ตารางเวลาจะถูกสร้างด้วย JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal สำหรับแก้ไข -->
+        <div id="editModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div class="bg-white rounded-xl p-6 w-full max-w-4xl mx-4 max-h-screen overflow-y-auto">
+                <h3 class="text-xl font-semibold mb-4 text-gray-700">แก้ไขรายวิชา</h3>
+                
+                <!-- ข้อมูลพื้นฐาน -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                    <input type="text" id="editCourseCode" placeholder="รหัสวิชา" class="border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    <input type="text" id="editCourseName" placeholder="ชื่อรายวิชา" class="border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent md:col-span-2">
+                    <input type="text" id="editCourseGroup" placeholder="กลุ่ม" class="border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                </div>
+
+                <!-- สอบกลางภาค -->
+                <div class="bg-blue-50 p-4 rounded-lg mb-4">
+                    <h4 class="font-semibold text-blue-800 mb-3">📝 สอบกลางภาค</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+                        <input type="date" id="editMidtermDate" class="border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        <input type="time" id="editMidtermStartTime" placeholder="เวลาเริ่ม" class="border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        <input type="time" id="editMidtermEndTime" placeholder="เวลาสิ้นสุด" class="border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        <input type="text" id="editMidtermRoom" placeholder="ห้องสอบ" class="border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    </div>
+                </div>
+
+                <!-- สอบปลายภาค -->
+                <div class="bg-red-50 p-4 rounded-lg mb-4">
+                    <h4 class="font-semibold text-red-800 mb-3">📝 สอบปลายภาค</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+                        <input type="date" id="editFinalDate" class="border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        <input type="time" id="editFinalStartTime" placeholder="เวลาเริ่ม" class="border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        <input type="time" id="editFinalEndTime" placeholder="เวลาสิ้นสุด" class="border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        <input type="text" id="editFinalRoom" placeholder="ห้องสอบ" class="border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    </div>
+                </div>
+
+                <div class="flex gap-3 justify-end">
+                    <button onclick="saveEdit()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium transition-colors duration-200">
+                        💾 บันทึก
+                    </button>
+                    <button onclick="closeEditModal()" class="bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded-lg font-medium transition-colors duration-200">
+                        ❌ ยกเลิก
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ข้อมูลรายวิชา
+        let courses = [
+            {
+                id: 1,
+                code: "CP353001",
+                name: "Operating Systems and System Calls Programming\nระบบปฏิบัติการและการเขียนโปรแกรมซีสเต็มคอล",
+                group: "4",
+                midterm: {
+                    date: "",
+                    startTime: "",
+                    endTime: "",
+                    room: ""
+                },
+                final: {
+                    date: "2024-10-28",
+                    startTime: "08:30",
+                    endTime: "11:30",
+                    room: "N/A"
+                }
+            },
+            {
+                id: 2,
+                code: "CP353002",
+                name: "Principles of Software Design and Development\nหลักการออกแบบพัฒนาซอฟต์แวร์",
+                group: "4",
+                midterm: {
+                    date: "",
+                    startTime: "",
+                    endTime: "",
+                    room: ""
+                },
+                final: {
+                    date: "2024-10-25",
+                    startTime: "13:00",
+                    endTime: "16:00",
+                    room: "N/A"
+                }
+            },
+            {
+                id: 3,
+                code: "CP353003",
+                name: "Artificial Intelligence\nปัญญาประดิษฐ์",
+                group: "2",
+                midterm: {
+                    date: "",
+                    startTime: "",
+                    endTime: "",
+                    room: ""
+                },
+                final: {
+                    date: "2024-10-30",
+                    startTime: "08:30",
+                    endTime: "11:30",
+                    room: "N/A"
+                }
+            },
+            {
+                id: 4,
+                code: "CP353201",
+                name: "Software Quality Assurance\nการประกันคุณภาพซอฟต์แวร์",
+                group: "2",
+                midterm: {
+                    date: "",
+                    startTime: "",
+                    endTime: "",
+                    room: ""
+                },
+                final: {
+                    date: "",
+                    startTime: "",
+                    endTime: "",
+                    room: ""
+                }
+            },
+            {
+                id: 5,
+                code: "CP353761",
+                name: "Seminar in Computer Science\nสัมมนาทางวิทยาการคอมพิวเตอร์",
+                group: "2",
+                midterm: {
+                    date: "",
+                    startTime: "",
+                    endTime: "",
+                    room: ""
+                },
+                final: {
+                    date: "",
+                    startTime: "",
+                    endTime: "",
+                    room: ""
+                }
+            },
+            {
+                id: 6,
+                code: "GE362785",
+                name: "CREATIVE THINKING AND PROBLEM SOLVING\nการคิดเชิงสร้างสรรค์และการแก้ปัญหา",
+                group: "17",
+                midterm: {
+                    date: "",
+                    startTime: "",
+                    endTime: "",
+                    room: ""
+                },
+                final: {
+                    date: "2024-10-26",
+                    startTime: "13:00",
+                    endTime: "16:00",
+                    room: "N/A"
+                }
+            },
+            {
+                id: 7,
+                code: "SC403602",
+                name: "NUMERICAL METHODS FOR COMPUTER SCIENCE\nวิธีเชิงตัวเลขสำหรับวิทยาการคอมพิวเตอร์",
+                group: "2",
+                midterm: {
+                    date: "2024-08-28",
+                    startTime: "08:30",
+                    endTime: "11:30",
+                    room: "N/A"
+                },
+                final: {
+                    date: "2024-10-24",
+                    startTime: "13:00",
+                    endTime: "16:00",
+                    room: "N/A"
+                }
+            }
+        ];
+
+        // ข้อมูลสอบสำหรับปฏิทิน
+        const examData = {
+            '24': [
+                {
+                    code: 'SC403602',
+                    name: 'วิธีเชิงตัวเลขสำหรับวิทยาการคอมพิวเตอร์',
+                    time: '13:00-16:00',
+                    type: 'สอบปลายภาค',
+                    room: 'N/A'
+                }
+            ],
+            '25': [
+                {
+                    code: 'CP353002',
+                    name: 'หลักการออกแบบพัฒนาซอฟต์แวร์',
+                    time: '13:00-16:00',
+                    type: 'สอบปลายภาค',
+                    room: 'N/A'
+                }
+            ],
+            '26': [
+                {
+                    code: 'GE362785',
+                    name: 'การคิดเชิงสร้างสรรค์และการแก้ปัญหา',
+                    time: '13:00-16:00',
+                    type: 'สอบปลายภาค',
+                    room: 'N/A'
+                }
+            ],
+            '28': [
+                {
+                    code: 'CP353001',
+                    name: 'ระบบปฏิบัติการและการเขียนโปรแกรมซีสเต็มคอล',
+                    time: '08:30-11:30',
+                    type: 'สอบปลายภาค',
+                    room: 'N/A'
+                }
+            ],
+            '30': [
+                {
+                    code: 'CP353003',
+                    name: 'ปัญญาประดิษฐ์',
+                    time: '08:30-11:30',
+                    type: 'สอบปลายภาค',
+                    room: 'N/A'
+                }
+            ]
+        };
+
+        let editingId = null;
+        let currentMonth = 9; // ตุลาคม (0-based)
+        let currentYear = 2568;
+        const today = new Date();
+        const todayDate = today.getDate();
+        const todayMonth = today.getMonth();
+        const todayYear = today.getFullYear() + 543; // แปลงเป็น พ.ศ.
+
+        const monthNames = [
+            'มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน',
+            'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'
+        ];
+
+        // ฟังก์ชันสำหรับแท็บ
+        function showTab(tabName) {
+            // ซ่อนทุกแท็บ
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.add('hidden');
+            });
+
+            // แสดงแท็บที่เลือก
+            if (tabName === 'table') {
+                document.getElementById('tableView').classList.remove('hidden');
+                document.getElementById('tableTab').className = 'tab-active px-6 py-3 rounded-lg font-medium transition-all duration-200 shadow-md';
+                document.getElementById('calendarTab').className = 'tab-inactive px-6 py-3 rounded-lg font-medium transition-all duration-200 shadow-md hover:shadow-lg';
+            } else if (tabName === 'calendar') {
+                document.getElementById('calendarView').classList.remove('hidden');
+                document.getElementById('calendarTab').className = 'tab-active px-6 py-3 rounded-lg font-medium transition-all duration-200 shadow-md';
+                document.getElementById('tableTab').className = 'tab-inactive px-6 py-3 rounded-lg font-medium transition-all duration-200 shadow-md hover:shadow-lg';
+                generateCalendar();
+                generateExamList();
+                updateStats();
+            }
+        }
+
+        // ฟังก์ชันสำหรับตาราง (เวอร์ชั่น 1)
+        function renderTable() {
+            const tbody = document.getElementById('courseTable');
+            tbody.innerHTML = '';
+
+            courses.forEach(course => {
+                const row = document.createElement('tr');
+                row.className = 'hover:bg-gray-50 transition-colors duration-150';
+                
+                const status = getExamStatus(course);
+                const statusBadge = getStatusBadge(status);
+                const midtermDisplay = formatExamDisplay(course.midterm);
+                const finalDisplay = formatExamDisplay(course.final);
+
+                const midtermDate = course.midterm.date ? new Date(course.midterm.date).toLocaleDateString('th-TH', { day: 'numeric', month: 'short' }) : '-';
+                const midtermTime = (course.midterm.startTime && course.midterm.endTime) ? `${course.midterm.startTime}-${course.midterm.endTime}` : '-';
+                const midtermRoom = course.midterm.room || '-';
+                
+                const finalDate = course.final.date ? new Date(course.final.date).toLocaleDateString('th-TH', { day: 'numeric', month: 'short' }) : '-';
+                const finalTime = (course.final.startTime && course.final.endTime) ? `${course.final.startTime}-${course.final.endTime}` : '-';
+                const finalRoom = course.final.room || '-';
+
+                row.innerHTML = `
+                    <td class="border border-gray-300 px-4 py-3 font-medium text-blue-700">${course.code}</td>
+                    <td class="border border-gray-300 px-4 py-3">
+                        <div class="whitespace-pre-line text-sm">${course.name}</div>
+                    </td>
+                    <td class="border border-gray-300 px-4 py-3 text-center font-medium">${course.group}</td>
+                    <td class="border border-gray-300 px-3 py-3 text-center">
+                        <div class="text-sm ${midtermDate === '-' ? 'text-gray-400' : 'text-gray-700'}">${midtermDate}</div>
+                    </td>
+                    <td class="border border-gray-300 px-3 py-3 text-center">
+                        <div class="text-sm ${midtermTime === '-' ? 'text-gray-400' : 'text-gray-700'}">${midtermTime}</div>
+                    </td>
+                    <td class="border border-gray-300 px-3 py-3 text-center">
+                        <div class="text-sm ${midtermRoom === '-' ? 'text-gray-400' : 'text-gray-700'}">${midtermRoom}</div>
+                    </td>
+                    <td class="border border-gray-300 px-3 py-3 text-center">
+                        <div class="text-sm ${finalDate === '-' ? 'text-gray-400' : 'text-gray-700'}">${finalDate}</div>
+                    </td>
+                    <td class="border border-gray-300 px-3 py-3 text-center">
+                        <div class="text-sm ${finalTime === '-' ? 'text-gray-400' : 'text-gray-700'}">${finalTime}</div>
+                    </td>
+                    <td class="border border-gray-300 px-3 py-3 text-center">
+                        <div class="text-sm ${finalRoom === '-' ? 'text-gray-400' : 'text-gray-700'}">${finalRoom}</div>
+                    </td>
+                    <td class="border border-gray-300 px-4 py-3 text-center">${statusBadge}</td>
+                    <td class="border border-gray-300 px-4 py-3 text-center">
+                        <div class="flex gap-2 justify-center">
+                            <button onclick="editCourse(${course.id})" class="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded text-sm font-medium transition-colors duration-200">
+                                ✏️ แก้ไข
+                            </button>
+                            <button onclick="deleteCourse(${course.id})" class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm font-medium transition-colors duration-200">
+                                🗑️ ลบ
+                            </button>
+                        </div>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        function formatExamDisplay(examData) {
+            if (!examData.date || !examData.startTime || !examData.endTime) {
+                return '-';
+            }
+            
+            const date = new Date(examData.date);
+            const thaiDate = date.toLocaleDateString('th-TH', {
+                day: 'numeric',
+                month: 'short',
+                year: 'numeric'
+            });
+            
+            return `${thaiDate}<br>เวลา ${examData.startTime}-${examData.endTime}<br>ห้อง: ${examData.room || 'N/A'}`;
+        }
+
+        function getExamStatus(course) {
+            const hasMidterm = course.midterm.date && course.midterm.startTime && course.midterm.endTime;
+            const hasFinal = course.final.date && course.final.startTime && course.final.endTime;
+            
+            if (!hasMidterm && !hasFinal) return 'no-exam';
+            if (hasMidterm && hasFinal) return 'both-exams';
+            if (hasFinal) return 'final-only';
+            return 'midterm-only';
+        }
+
+        function getStatusBadge(status) {
+            switch(status) {
+                case 'no-exam':
+                    return '<span class="bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-sm font-medium">ไม่มีสอบ</span>';
+                case 'both-exams':
+                    return '<span class="bg-red-100 text-red-700 px-3 py-1 rounded-full text-sm font-medium">มีสอบทั้งคู่</span>';
+                case 'final-only':
+                    return '<span class="bg-orange-100 text-orange-700 px-3 py-1 rounded-full text-sm font-medium">สอบปลายภาคเท่านั้น</span>';
+                case 'midterm-only':
+                    return '<span class="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-sm font-medium">สอบกลางภาคเท่านั้น</span>';
+                default:
+                    return '<span class="bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-sm font-medium">-</span>';
+            }
+        }
+
+        function showAddForm() {
+            document.getElementById('addForm').classList.remove('hidden');
+        }
+
+        function hideAddForm() {
+            document.getElementById('addForm').classList.add('hidden');
+            clearAddForm();
+        }
+
+        function clearAddForm() {
+            document.getElementById('courseCode').value = '';
+            document.getElementById('courseName').value = '';
+            document.getElementById('courseGroup').value = '';
+            document.getElementById('midtermDate').value = '';
+            document.getElementById('midtermStartTime').value = '';
+            document.getElementById('midtermEndTime').value = '';
+            document.getElementById('midtermRoom').value = '';
+            document.getElementById('finalDate').value = '';
+            document.getElementById('finalStartTime').value = '';
+            document.getElementById('finalEndTime').value = '';
+            document.getElementById('finalRoom').value = '';
+        }
+
+        function addCourse() {
+            const code = document.getElementById('courseCode').value.trim();
+            const name = document.getElementById('courseName').value.trim();
+            const group = document.getElementById('courseGroup').value.trim();
+            
+            const midtermDate = document.getElementById('midtermDate').value;
+            const midtermStartTime = document.getElementById('midtermStartTime').value;
+            const midtermEndTime = document.getElementById('midtermEndTime').value;
+            const midtermRoom = document.getElementById('midtermRoom').value.trim();
+            
+            const finalDate = document.getElementById('finalDate').value;
+            const finalStartTime = document.getElementById('finalStartTime').value;
+            const finalEndTime = document.getElementById('finalEndTime').value;
+            const finalRoom = document.getElementById('finalRoom').value.trim();
+
+            if (!code || !name || !group) {
+                alert('กรุณากรอกรหัสวิชา ชื่อรายวิชา และกลุ่ม');
+                return;
+            }
+
+            const newId = Math.max(...courses.map(c => c.id), 0) + 1;
+            courses.push({
+                id: newId,
+                code: code,
+                name: name,
+                group: group,
+                midterm: {
+                    date: midtermDate,
+                    startTime: midtermStartTime,
+                    endTime: midtermEndTime,
+                    room: midtermRoom
+                },
+                final: {
+                    date: finalDate,
+                    startTime: finalStartTime,
+                    endTime: finalEndTime,
+                    room: finalRoom
+                }
+            });
+
+            renderTable();
+            hideAddForm();
+        }
+
+        function editCourse(id) {
+            const course = courses.find(c => c.id === id);
+            if (!course) return;
+
+            editingId = id;
+            document.getElementById('editCourseCode').value = course.code;
+            document.getElementById('editCourseName').value = course.name;
+            document.getElementById('editCourseGroup').value = course.group;
+            
+            document.getElementById('editMidtermDate').value = course.midterm.date || '';
+            document.getElementById('editMidtermStartTime').value = course.midterm.startTime || '';
+            document.getElementById('editMidtermEndTime').value = course.midterm.endTime || '';
+            document.getElementById('editMidtermRoom').value = course.midterm.room || '';
+            
+            document.getElementById('editFinalDate').value = course.final.date || '';
+            document.getElementById('editFinalStartTime').value = course.final.startTime || '';
+            document.getElementById('editFinalEndTime').value = course.final.endTime || '';
+            document.getElementById('editFinalRoom').value = course.final.room || '';
+            
+            document.getElementById('editModal').classList.remove('hidden');
+        }
+
+        function saveEdit() {
+            if (!editingId) return;
+
+            const code = document.getElementById('editCourseCode').value.trim();
+            const name = document.getElementById('editCourseName').value.trim();
+            const group = document.getElementById('editCourseGroup').value.trim();
+            
+            const midtermDate = document.getElementById('editMidtermDate').value;
+            const midtermStartTime = document.getElementById('editMidtermStartTime').value;
+            const midtermEndTime = document.getElementById('editMidtermEndTime').value;
+            const midtermRoom = document.getElementById('editMidtermRoom').value.trim();
+            
+            const finalDate = document.getElementById('editFinalDate').value;
+            const finalStartTime = document.getElementById('editFinalStartTime').value;
+            const finalEndTime = document.getElementById('editFinalEndTime').value;
+            const finalRoom = document.getElementById('editFinalRoom').value.trim();
+
+            if (!code || !name || !group) {
+                alert('กรุณากรอกรหัสวิชา ชื่อรายวิชา และกลุ่ม');
+                return;
+            }
+
+            const courseIndex = courses.findIndex(c => c.id === editingId);
+            if (courseIndex !== -1) {
+                courses[courseIndex] = {
+                    ...courses[courseIndex],
+                    code: code,
+                    name: name,
+                    group: group,
+                    midterm: {
+                        date: midtermDate,
+                        startTime: midtermStartTime,
+                        endTime: midtermEndTime,
+                        room: midtermRoom
+                    },
+                    final: {
+                        date: finalDate,
+                        startTime: finalStartTime,
+                        endTime: finalEndTime,
+                        room: finalRoom
+                    }
+                };
+            }
+
+            renderTable();
+            closeEditModal();
+        }
+
+        function closeEditModal() {
+            document.getElementById('editModal').classList.add('hidden');
+            editingId = null;
+        }
+
+        function deleteCourse(id) {
+            if (confirm('คุณแน่ใจหรือไม่ที่จะลบรายวิชานี้?')) {
+                courses = courses.filter(c => c.id !== id);
+                renderTable();
+            }
+        }
+
+        // ฟังก์ชันสำหรับปฏิทิน (เวอร์ชั่น 2)
+        function generateCalendar() {
+            const calendarDays = document.getElementById('calendarDays');
+            const monthYear = document.getElementById('monthYear');
+            
+            monthYear.textContent = `${monthNames[currentMonth]} ${currentYear}`;
+            
+            // คำนวณวันแรกของเดือนและจำนวนวันในเดือน
+            const firstDay = new Date(currentYear - 543, currentMonth, 1).getDay();
+            const daysInMonth = new Date(currentYear - 543, currentMonth + 1, 0).getDate();
+            
+            calendarDays.innerHTML = '';
+            
+            // เพิ่มช่องว่างสำหรับวันก่อนวันแรกของเดือน
+            for (let i = 0; i < firstDay; i++) {
+                const emptyDay = document.createElement('div');
+                emptyDay.className = 'h-12';
+                calendarDays.appendChild(emptyDay);
+            }
+            
+            // เพิ่มวันที่ในเดือน
+            for (let day = 1; day <= daysInMonth; day++) {
+                const dayElement = document.createElement('div');
+                dayElement.className = 'h-16 flex items-center justify-center rounded-lg cursor-pointer calendar-day';
+                dayElement.textContent = day;
+                
+                // เช็คว่าเป็นวันนี้หรือไม่
+                if (day === todayDate && currentMonth === todayMonth && currentYear === todayYear) {
+                    dayElement.classList.add('today');
+                }
+                
+                // เช็คว่ามีสอบหรือไม่
+                if (examData[day.toString()]) {
+                    dayElement.classList.add('exam-day');
+                    // เพิ่มชื่อวิชาแบบย่อ
+                    const examInfo = examData[day.toString()];
+                    if (examInfo.length > 0) {
+                        const shortName = examInfo[0].code.substring(0, 8) + (examInfo.length > 1 ? `+${examInfo.length-1}` : '');
+                        dayElement.innerHTML = `
+                            <div class="text-center">
+                                <div class="font-bold">${day}</div>
+                                <div class="text-xs mt-1 opacity-90">${shortName}</div>
+                            </div>
+                        `;
+                    }
+                }
+                
+                if (!dayElement.classList.contains('today') && !dayElement.classList.contains('exam-day')) {
+                    dayElement.className += ' bg-gray-50 hover:bg-gray-100 text-gray-700';
+                }
+                
+                dayElement.addEventListener('click', () => showExamDetails(day));
+                calendarDays.appendChild(dayElement);
+            }
+        }
+
+        function showExamDetails(day) {
+            const examDetails = document.getElementById('examDetails');
+            const selectedDate = document.getElementById('selectedDate');
+            const examDetailsContent = document.getElementById('examDetailsContent');
+            
+            selectedDate.textContent = `รายละเอียดการสอบ - ${day} ${monthNames[currentMonth]} ${currentYear}`;
+            
+            if (examData[day.toString()]) {
+                const exams = examData[day.toString()];
+                let content = '';
+                
+                exams.forEach(exam => {
+                    content += `
+                        <div class="bg-red-50 border-l-4 border-red-500 p-4 mb-4 rounded-r-lg">
+                            <div class="flex items-start">
+                                <div class="flex-shrink-0">
+                                    <span class="text-2xl">📝</span>
+                                </div>
+                                <div class="ml-3 flex-1">
+                                    <h4 class="text-lg font-semibold text-red-800">${exam.code}</h4>
+                                    <p class="text-red-700 mb-2">${exam.name}</p>
+                                    <div class="grid grid-cols-1 md:grid-cols-3 gap-2 text-sm">
+                                        <div><strong>ประเภท:</strong> ${exam.type}</div>
+                                        <div><strong>เวลา:</strong> ${exam.time}</div>
+                                        <div><strong>ห้องสอบ:</strong> ${exam.room}</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                examDetailsContent.innerHTML = content;
+            } else {
+                examDetailsContent.innerHTML = `
+                    <div class="bg-green-50 border-l-4 border-green-500 p-4 rounded-r-lg text-center">
+                        <span class="text-4xl">🎉</span>
+                        <p class="text-green-700 mt-2 font-medium">ไม่มีการสอบในวันนี้</p>
+                        <p class="text-green-600 text-sm">วันนี้คุณสามารถพักผ่อนได้เลย!</p>
+                    </div>
+                `;
+            }
+            
+            // สร้างตารางเวลาสัปดาห์
+            generateWeeklySchedule(day);
+            
+            examDetails.classList.remove('hidden');
+            examDetails.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function generateWeeklySchedule(selectedDay) {
+            // หาวันอาทิตย์ของสัปดาห์ที่เลือก
+            const selectedDate = new Date(currentYear - 543, currentMonth, selectedDay);
+            const dayOfWeek = selectedDate.getDay(); // 0 = อาทิตย์, 1 = จันทร์, ...
+            const startOfWeek = new Date(selectedDate);
+            startOfWeek.setDate(selectedDate.getDate() - dayOfWeek);
+            
+            // แสดงวันที่ในหัวตาราง
+            for (let i = 0; i < 7; i++) {
+                const currentDate = new Date(startOfWeek);
+                currentDate.setDate(startOfWeek.getDate() + i);
+                const dateElement = document.getElementById(`weekDate${i}`);
+                dateElement.textContent = currentDate.getDate();
+                
+                // เน้นวันที่เลือก
+                if (currentDate.getDate() === selectedDay && currentDate.getMonth() === currentMonth) {
+                    dateElement.className = 'border border-gray-300 px-3 py-1 text-center text-sm bg-yellow-200 font-bold';
+                } else {
+                    dateElement.className = 'border border-gray-300 px-3 py-1 text-center text-sm';
+                }
+            }
+            
+            // สร้างตารางเวลา
+            const scheduleBody = document.getElementById('weeklyScheduleBody');
+            const timeSlots = [
+                '08:00-09:00', '09:00-10:00', '10:00-11:00', '11:00-12:00',
+                '12:00-13:00', '13:00-14:00', '14:00-15:00', '15:00-16:00',
+                '16:00-17:00', '17:00-18:00', '18:00-19:00', '19:00-20:00'
+            ];
+            
+            let scheduleHTML = '';
+            
+            timeSlots.forEach(timeSlot => {
+                scheduleHTML += `<tr class="hover:bg-gray-50">`;
+                scheduleHTML += `<td class="border border-gray-300 px-3 py-2 text-center font-medium bg-gray-50">${timeSlot}</td>`;
+                
+                // สำหรับแต่ละวันในสัปดาห์
+                for (let dayIndex = 0; dayIndex < 7; dayIndex++) {
+                    const currentDate = new Date(startOfWeek);
+                    currentDate.setDate(startOfWeek.getDate() + dayIndex);
+                    const dayNumber = currentDate.getDate();
+                    
+                    let cellContent = '';
+                    let cellClass = 'border border-gray-300 px-2 py-2 text-center text-xs';
+                    
+                    // เช็คว่ามีสอบในวันนี้หรือไม่
+                    if (examData[dayNumber.toString()]) {
+                        const exams = examData[dayNumber.toString()];
+                        exams.forEach(exam => {
+                            // เช็คว่าเวลาสอบตรงกับช่วงเวลานี้หรือไม่
+                            const [startTime, endTime] = exam.time.split('-');
+                            const slotStart = timeSlot.split('-')[0];
+                            const slotEnd = timeSlot.split('-')[1];
+                            
+                            if (isTimeInRange(startTime, endTime, slotStart, slotEnd)) {
+                                cellContent = `
+                                    <div class="bg-red-100 border border-red-300 rounded p-1">
+                                        <div class="font-semibold text-red-800 text-xs">${exam.code}</div>
+                                        <div class="text-red-600 text-xs">${exam.type}</div>
+                                        <div class="text-red-500 text-xs">${exam.room}</div>
+                                    </div>
+                                `;
+                                cellClass += ' bg-red-50';
+                            }
+                        });
+                    }
+                    
+                    // เน้นวันที่เลือก
+                    if (dayNumber === selectedDay && currentDate.getMonth() === currentMonth) {
+                        cellClass += ' bg-yellow-50 border-yellow-300';
+                    }
+                    
+                    scheduleHTML += `<td class="${cellClass}">${cellContent}</td>`;
+                }
+                
+                scheduleHTML += `</tr>`;
+            });
+            
+            scheduleBody.innerHTML = scheduleHTML;
+        }
+
+        function isTimeInRange(examStart, examEnd, slotStart, slotEnd) {
+            // แปลงเวลาเป็นนาที
+            const examStartMinutes = timeToMinutes(examStart);
+            const examEndMinutes = timeToMinutes(examEnd);
+            const slotStartMinutes = timeToMinutes(slotStart);
+            const slotEndMinutes = timeToMinutes(slotEnd);
+            
+            // เช็คว่าช่วงเวลาทับซ้อนกันหรือไม่
+            return (examStartMinutes < slotEndMinutes && examEndMinutes > slotStartMinutes);
+        }
+
+        function timeToMinutes(timeString) {
+            const [hours, minutes] = timeString.split(':').map(Number);
+            return hours * 60 + minutes;
+        }
+
+        function generateExamList() {
+            const examList = document.getElementById('examList');
+            let content = '';
+            
+            // รวบรวมข้อมูลสอบทั้งหมดในเดือน
+            const allExams = [];
+            Object.keys(examData).forEach(day => {
+                examData[day].forEach(exam => {
+                    allExams.push({
+                        ...exam,
+                        day: parseInt(day)
+                    });
+                });
+            });
+            
+            // เรียงตามวันที่
+            allExams.sort((a, b) => a.day - b.day);
+            
+            allExams.forEach(exam => {
+                const dayName = new Date(currentYear - 543, currentMonth, exam.day).toLocaleDateString('th-TH', { weekday: 'long' });
+                content += `
+                    <div class="bg-red-50 border border-red-200 rounded-lg p-4 hover:shadow-md transition-shadow duration-200">
+                        <div class="flex items-start justify-between">
+                            <div class="flex-1">
+                                <div class="flex items-center mb-2">
+                                    <span class="bg-red-500 text-white px-2 py-1 rounded text-sm font-medium mr-2">
+                                        ${exam.day} ต.ค.
+                                    </span>
+                                    <span class="text-gray-600 text-sm">${dayName}</span>
+                                </div>
+                                <h4 class="font-semibold text-gray-800 mb-1">${exam.code}</h4>
+                                <p class="text-gray-600 text-sm mb-2">${exam.name}</p>
+                                <div class="flex items-center text-sm text-gray-500">
+                                    <span class="mr-4">⏰ ${exam.time}</span>
+                                    <span>🏢 ${exam.room}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            examList.innerHTML = content;
+        }
+
+        function previousMonth() {
+            currentMonth--;
+            if (currentMonth < 0) {
+                currentMonth = 11;
+                currentYear--;
+            }
+            generateCalendar();
+            generateExamList();
+        }
+
+        function nextMonth() {
+            currentMonth++;
+            if (currentMonth > 11) {
+                currentMonth = 0;
+                currentYear++;
+            }
+            generateCalendar();
+            generateExamList();
+        }
+
+        function updateStats() {
+            const totalSubjects = courses.length;
+            const examSubjects = courses.filter(course => 
+                (course.midterm.date && course.midterm.startTime && course.midterm.endTime) || 
+                (course.final.date && course.final.startTime && course.final.endTime)
+            ).length;
+            const examDays = Object.keys(examData).length;
+            const noExamSubjects = totalSubjects - examSubjects;
+            
+            document.getElementById('totalSubjects').textContent = totalSubjects;
+            document.getElementById('examSubjects').textContent = examSubjects;
+            document.getElementById('examDays').textContent = examDays;
+            document.getElementById('noExamSubjects').textContent = noExamSubjects;
+        }
+
+        // ฟังก์ชัน Export ไฟล์
+        function exportToExcel() {
+            // สร้างข้อมูล CSV
+            let csvContent = '\uFEFF'; // BOM สำหรับ UTF-8
+            csvContent += 'รหัสวิชา,ชื่อรายวิชา,กลุ่ม,วันสอบกลางภาค,เวลาสอบกลางภาค,ห้องสอบกลางภาค,วันสอบปลายภาค,เวลาสอบปลายภาค,ห้องสอบปลายภาค,สถานะ\n';
+            
+            courses.forEach(course => {
+                const midtermDate = course.midterm.date ? new Date(course.midterm.date).toLocaleDateString('th-TH') : '-';
+                const midtermTime = (course.midterm.startTime && course.midterm.endTime) ? `${course.midterm.startTime}-${course.midterm.endTime}` : '-';
+                const midtermRoom = course.midterm.room || '-';
+                
+                const finalDate = course.final.date ? new Date(course.final.date).toLocaleDateString('th-TH') : '-';
+                const finalTime = (course.final.startTime && course.final.endTime) ? `${course.final.startTime}-${course.final.endTime}` : '-';
+                const finalRoom = course.final.room || '-';
+                
+                const status = getExamStatusText(getExamStatus(course));
+                
+                // แทนที่ขึ้นบรรทัดใหม่ด้วยช่องว่าง
+                const cleanName = course.name.replace(/\n/g, ' ');
+                
+                csvContent += `"${course.code}","${cleanName}","${course.group}","${midtermDate}","${midtermTime}","${midtermRoom}","${finalDate}","${finalTime}","${finalRoom}","${status}"\n`;
+            });
+            
+            // สร้างไฟล์และดาวน์โหลด
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            link.setAttribute('href', url);
+            link.setAttribute('download', `ตารางสอบ_${new Date().toLocaleDateString('th-TH')}.csv`);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            // แสดงข้อความแจ้งเตือน
+            showNotification('📊 ส่งออกไฟล์ Excel สำเร็จ!', 'success');
+        }
+
+        function exportToWord() {
+            // สร้างเนื้อหา HTML สำหรับ Word
+            let htmlContent = `
+                <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
+                <head>
+                    <meta charset="utf-8">
+                    <title>ตารางสอบ</title>
+                    <style>
+                        body { font-family: 'TH Sarabun New', Arial, sans-serif; font-size: 14pt; }
+                        table { border-collapse: collapse; width: 100%; margin: 20px 0; }
+                        th, td { border: 1px solid #000; padding: 8px; text-align: left; }
+                        th { background-color: #4472C4; color: white; font-weight: bold; text-align: center; }
+                        .center { text-align: center; }
+                        .header { text-align: center; font-size: 18pt; font-weight: bold; margin-bottom: 20px; }
+                        .status-no-exam { background-color: #f3f4f6; color: #6b7280; }
+                        .status-both-exams { background-color: #fef2f2; color: #dc2626; }
+                        .status-final-only { background-color: #fff7ed; color: #ea580c; }
+                        .status-midterm-only { background-color: #eff6ff; color: #2563eb; }
+                    </style>
+                </head>
+                <body>
+                    <div class="header">🎓 ตารางสอบ</div>
+                    <p><strong>วันที่สร้างรายงาน:</strong> ${new Date().toLocaleDateString('th-TH', { 
+                        year: 'numeric', 
+                        month: 'long', 
+                        day: 'numeric',
+                        weekday: 'long'
+                    })}</p>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th rowspan="2">รหัสวิชา</th>
+                                <th rowspan="2">ชื่อรายวิชา</th>
+                                <th rowspan="2">กลุ่ม</th>
+                                <th colspan="3">สอบกลางภาค</th>
+                                <th colspan="3">สอบปลายภาค</th>
+                                <th rowspan="2">สถานะ</th>
+                            </tr>
+                            <tr>
+                                <th>วันที่</th>
+                                <th>เวลา</th>
+                                <th>ห้อง</th>
+                                <th>วันที่</th>
+                                <th>เวลา</th>
+                                <th>ห้อง</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+            
+            courses.forEach(course => {
+                const midtermDate = course.midterm.date ? new Date(course.midterm.date).toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: 'numeric' }) : '-';
+                const midtermTime = (course.midterm.startTime && course.midterm.endTime) ? `${course.midterm.startTime}-${course.midterm.endTime}` : '-';
+                const midtermRoom = course.midterm.room || '-';
+                
+                const finalDate = course.final.date ? new Date(course.final.date).toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: 'numeric' }) : '-';
+                const finalTime = (course.final.startTime && course.final.endTime) ? `${course.final.startTime}-${course.final.endTime}` : '-';
+                const finalRoom = course.final.room || '-';
+                
+                const status = getExamStatus(course);
+                const statusText = getExamStatusText(status);
+                const statusClass = `status-${status.replace('-', '-')}`;
+                
+                htmlContent += `
+                    <tr>
+                        <td class="center"><strong>${course.code}</strong></td>
+                        <td>${course.name.replace(/\n/g, '<br>')}</td>
+                        <td class="center">${course.group}</td>
+                        <td class="center">${midtermDate}</td>
+                        <td class="center">${midtermTime}</td>
+                        <td class="center">${midtermRoom}</td>
+                        <td class="center">${finalDate}</td>
+                        <td class="center">${finalTime}</td>
+                        <td class="center">${finalRoom}</td>
+                        <td class="center ${statusClass}">${statusText}</td>
+                    </tr>
+                `;
+            });
+            
+            htmlContent += `
+                        </tbody>
+                    </table>
+                    <div style="margin-top: 30px;">
+                        <h3>📊 สถิติการสอบ</h3>
+                        <ul>
+                            <li><strong>จำนวนวิชาทั้งหมด:</strong> ${courses.length} วิชา</li>
+                            <li><strong>วิชาที่มีสอบ:</strong> ${courses.filter(course => 
+                                (course.midterm.date && course.midterm.startTime && course.midterm.endTime) || 
+                                (course.final.date && course.final.startTime && course.final.endTime)
+                            ).length} วิชา</li>
+                            <li><strong>วันที่มีสอบ:</strong> ${Object.keys(examData).length} วัน</li>
+                            <li><strong>วิชาที่ไม่มีสอบ:</strong> ${courses.length - courses.filter(course => 
+                                (course.midterm.date && course.midterm.startTime && course.midterm.endTime) || 
+                                (course.final.date && course.final.startTime && course.final.endTime)
+                            ).length} วิชา</li>
+                        </ul>
+                    </div>
+                </body>
+                </html>
+            `;
+            
+            // สร้างไฟล์และดาวน์โหลด
+            const blob = new Blob([htmlContent], { type: 'application/msword;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            link.setAttribute('href', url);
+            link.setAttribute('download', `ตารางสอบ_${new Date().toLocaleDateString('th-TH')}.doc`);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            // แสดงข้อความแจ้งเตือน
+            showNotification('📄 ส่งออกไฟล์ Word สำเร็จ!', 'success');
+        }
+
+        function formatExamDisplayForWord(examData) {
+            if (!examData.date || !examData.startTime || !examData.endTime) {
+                return '-';
+            }
+            
+            const date = new Date(examData.date);
+            const thaiDate = date.toLocaleDateString('th-TH', {
+                day: 'numeric',
+                month: 'short',
+                year: 'numeric'
+            });
+            
+            return `${thaiDate}<br>เวลา ${examData.startTime}-${examData.endTime}<br>ห้อง: ${examData.room || 'N/A'}`;
+        }
+
+        function getExamStatusText(status) {
+            switch(status) {
+                case 'no-exam':
+                    return 'ไม่มีสอบ';
+                case 'both-exams':
+                    return 'มีสอบทั้งคู่';
+                case 'final-only':
+                    return 'สอบปลายภาคเท่านั้น';
+                case 'midterm-only':
+                    return 'สอบกลางภาคเท่านั้น';
+                default:
+                    return '-';
+            }
+        }
+
+        function showNotification(message, type = 'info') {
+            // สร้าง notification element
+            const notification = document.createElement('div');
+            notification.className = `fixed top-4 right-4 z-50 px-6 py-4 rounded-lg shadow-lg transition-all duration-300 transform translate-x-full`;
+            
+            if (type === 'success') {
+                notification.className += ' bg-green-500 text-white';
+            } else if (type === 'error') {
+                notification.className += ' bg-red-500 text-white';
+            } else {
+                notification.className += ' bg-blue-500 text-white';
+            }
+            
+            notification.innerHTML = `
+                <div class="flex items-center">
+                    <span class="mr-2">${message}</span>
+                    <button onclick="this.parentElement.parentElement.remove()" class="ml-2 text-white hover:text-gray-200">
+                        ✕
+                    </button>
+                </div>
+            `;
+            
+            document.body.appendChild(notification);
+            
+            // แสดง notification
+            setTimeout(() => {
+                notification.classList.remove('translate-x-full');
+            }, 100);
+            
+            // ซ่อน notification หลัง 3 วินาที
+            setTimeout(() => {
+                notification.classList.add('translate-x-full');
+                setTimeout(() => {
+                    if (notification.parentElement) {
+                        notification.remove();
+                    }
+                }, 300);
+            }, 3000);
+        }
+
+        // เริ่มต้นแสดงตาราง
+        renderTable();
+    </script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'96c62c0304ab799a',t:'MTc1NDczMTE2Ny4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
